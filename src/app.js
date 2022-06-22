@@ -18,12 +18,14 @@ class App {
     const issueKeys = this.findIssueKeys(commitMessages)
     const transitionIssues = await this.getTransitionIdsAndKeys(issueKeys)
     await this.transitionIssues(transitionIssues.issueKeys, transitionIssues.transitionIds)
+    if (transitionIssues.errors && transitionIssues.errors.length > 0) {
+      throw new Error(transitionIssues.errors.join("\n"))
+    }
   }
 
   validateInput() {
     if (!process.env.JIRA_BASE_URL) throw new Error('Please specify JIRA_BASE_URL env')
     if (!process.env.JIRA_API_TOKEN) throw new Error('Please specify JIRA_API_TOKEN env')
-    if (!process.env.JIRA_USER_EMAIL) throw new Error('Please specify JIRA_USER_EMAIL env')
   }
 
   getCommitMessages() {
@@ -46,28 +48,38 @@ class App {
   async getTransitionIdsAndKeys(issues) {
     const transitionIds = [];
     const issueKeys = [];
+    const errors = [];
     for (const issue of issues) {
-      const issueData = await this.jira.getIssue(issue)
-      const issuetypeName = issueData.fields.issuetype.name
-      const issueStatus = issueData.fields.status.name
-      const issuetypeIndex = this.issuetypes.indexOf(issuetypeName)
-      
-      if (this.transitions[issuetypeIndex] !== issueStatus) { // current status !== transition status
-        issueKeys.push(issue)
-        const { transitions: availableTransitions } = await this.jira.getIssueTransitions(issue)
-        const designedTransition = availableTransitions.find(eachTransition => eachTransition.name === this.transitions[issuetypeIndex])
-        if (!designedTransition) {
-          throw new Error(`Cannot find transition "${this.transitions[issuetypeIndex]}"`)
+      try {
+        const issueData = await this.jira.getIssue(issue)
+        const issuetypeName = issueData.fields.issuetype.name
+        const issueStatus = issueData.fields.status.name
+        const issuetypeIndex = this.issuetypes.indexOf(issuetypeName)
+        if (issuetypeIndex == -1) {
+          errors.push(`Issue "${issue}" is of type "${issuetypeName}" that is not yet allowed for transition. Currently, allowed issue types for transition are ${this.issuetypes}`)
+          continue
         }
-        transitionIds.push({
-          id: designedTransition.id,
-          name: designedTransition.name
-        })
-      } else { // current status === transition status
-        console.log(`Issue ${issue} is already in ${issueStatus} status`)
+        
+        if (this.transitions[issuetypeIndex] !== issueStatus) { // current status !== transition status
+          const { transitions: availableTransitions } = await this.jira.getIssueTransitions(issue)
+          const designatedTransition = availableTransitions.find(eachTransition => eachTransition.to.name.toLowerCase() === this.transitions[issuetypeIndex].toLowerCase())
+          if (!designatedTransition) {
+            errors.push(`For ${issue}, cannot find transition "${this.transitions[issuetypeIndex]}" among ${availableTransitions.map(t => t.to.name)}`)
+            continue
+          }
+          issueKeys.push(issue)
+          transitionIds.push({
+            id: designatedTransition.id,
+            name: designatedTransition.name
+          })
+        } else { // current status === transition status
+          console.log(`Issue ${issue} is already in ${issueStatus} status`)
+        }
+      } catch(ex) {
+        errors.push(`Issue "${issue}" encountered some exception: ${ex}`)
       }
     }
-    return { issueKeys, transitionIds }
+    return { issueKeys, transitionIds, errors }
   }
 
   async transitionIssues(issues, transitionIds) {

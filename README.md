@@ -3,10 +3,9 @@ Find issue keys from commit messages and transition them to status which you wan
 ## Usage
 ```yaml
 - name: Jira find and transition issues
-  uses: chontawee/gj-find-transition-issues@1.0.4
+  uses: saurabh-prakash/gj-find-transition-issues@main
   env:
     JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-    JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
     JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
   with:
     issuetypes: Story,Bug
@@ -16,7 +15,6 @@ Find issue keys from commit messages and transition them to status which you wan
 <b> Environment Variables </b>
 - JIRA_BASE_URL - URL of Jira instance. Example: https://<yourdomain>.atlassian.net
 - JIRA_API_TOKEN - Access Token for Authorization. Example: HXe8DGg1iJd2AopzyxkFB7F2
-- JIRA_USER_EMAIL - email of the user for which Access Token was created for. Example: human@example.com
 <b> Arguments </b>
 - issuetypes - Type of issues on your workflow. They will map with `transitions` arguments. Example: Story,Bug
 - transitions - Transitions status which you want to move. They will depends on `issuetypes` argument. Example: In Progress,To Do

@@ -1,11 +1,11 @@
 {
-  "name": "chontawee/gj-find-transition-issues",
+  "name": "saurabh-prakash/gj-find-transition-issues",
   "version": "1.0.4",
   "description": "github actions for finding and transitioning jira issues",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chontawee/gj-find-transition-issues.git"
+    "url": "https://github.com/saurabh-prakash/gj-find-transition-issues.git"
   },
   "scripts": {
     "start": "node index.js",
@@ -17,7 +17,6 @@
     "github",
     "jira"
   ],
-  "author": "Chontawee Wongpromrat",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.2.6",
